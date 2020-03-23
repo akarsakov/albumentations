@@ -3406,11 +3406,6 @@ class TemplateTransform(ImageOnlyTransform):
         self.template_transform = template_transform
 
     def apply(self, img, template=None, img_weight=0.5, template_weight=0.5, **params):
-        if img.shape != template.shape:
-            raise ValueError(
-                "Expected image and template have the same shape, got {} and {}".format(img.shape, template.shape)
-            )
-
         return F.add_weighted(img, img_weight, template, template_weight)
 
     def get_params(self):
@@ -3431,14 +3426,19 @@ class TemplateTransform(ImageOnlyTransform):
 
         if F.get_num_channels(template) not in [1, F.get_num_channels(img)]:
             raise ValueError(
-                "Expected template to be single channel or "
+                "Template must be a single channel or "
                 "has the same number of channels as input image ({}), got {}".format(
                     F.get_num_channels(img), F.get_num_channels(template)
                 )
             )
 
         if template.dtype != img.dtype:
-            raise ValueError("Expected template and image to have the same image type")
+            raise ValueError("Image and template must be the same image type")
+
+        if img.shape[:2] != template.shape[:2]:
+            raise ValueError(
+                "Image and template must be the same size, got {} and {}".format(img.shape[:2], template.shape[:2])
+            )
 
         if F.get_num_channels(template) == 1 and F.get_num_channels(img) > 1:
             template = np.stack((template,) * F.get_num_channels(img), axis=-1)

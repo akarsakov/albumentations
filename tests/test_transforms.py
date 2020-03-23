@@ -684,3 +684,43 @@ def test_template_transform(img_weight, template_weight, template_transform, tem
     template = params["template"]
     assert template.shape == img.shape
     assert template.dtype == img.dtype
+
+
+def test_template_transform_incorrect_size():
+    img = np.random.randint(0, 256, [513, 450], np.uint8)
+    template = np.random.randint(0, 1, [455, 545], np.uint8)
+
+    with pytest.raises(ValueError) as exc_info:
+        transform = A.TemplateTransform(template, always_apply=True)
+        transform(image=img)
+
+    message = "Image and template must be the same size, got {} and {}".format(img.shape[:2], template.shape[:2])
+    assert str(exc_info.value) == message
+
+
+def test_template_transform_incorrect_type():
+    img = np.random.randint(0, 256, [513, 450], np.uint8)
+    template = np.random.uniform(0, 1, [513, 450]).astype(np.float32)
+
+    with pytest.raises(ValueError) as exc_info:
+        transform = A.TemplateTransform(template, always_apply=True)
+        transform(image=img)
+
+    message = "Image and template must be the same image type"
+    assert str(exc_info.value) == message
+
+
+@pytest.mark.parametrize(["img_channels", "template_channels"], [(6, 3), (1, 3), (3, 2)])
+def test_template_transform_incorrect_channels(img_channels, template_channels):
+    img = np.random.randint(0, 256, [513, 450, img_channels], np.uint8)
+    template = np.random.randint(0, 1, [513, 450, template_channels], np.uint8)
+
+    with pytest.raises(ValueError) as exc_info:
+        transform = A.TemplateTransform(template, always_apply=True)
+        transform(image=img)
+
+    message = (
+        "Template must be a single channel or has the same number of channels "
+        "as input image ({}), got {}".format(img_channels, template_channels)
+    )
+    assert str(exc_info.value) == message
