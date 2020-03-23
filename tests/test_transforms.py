@@ -652,3 +652,35 @@ def test_gauss_noise_incorrect_var_limit_type():
         A.GaussNoise(var_limit={"low": 70, "high": 90})
     message = "Expected var_limit type to be one of (int, float, tuple, list), got <class 'dict'>"
     assert str(exc_info.value) == message
+
+
+@pytest.mark.parametrize(
+    ["img_weight", "template_weight", "template_transform", "template_size"],
+    [
+        (0.5, 0.5, A.RandomSizedCrop((50, 200), 513, 450, always_apply=True), (256, 750)),
+        (0.5, 0.5, A.RandomResizedCrop(513, 450, always_apply=True), (384, 234)),
+        (0.5, 0.5, A.CenterCrop(513, 450, always_apply=True), (1023, 543)),
+        (0.5, 0.5, A.Resize(513, 450, always_apply=True), (1023, 543)),
+        (0.5, 0.5, A.NoOp(), (513, 450)),
+        (0.5, 0.5, None, (513, 450)),
+        (
+            0.5,
+            0.5,
+            A.Compose([A.Blur(), A.RandomSizedCrop((50, 200), 513, 450, always_apply=True), A.HorizontalFlip()]),
+            (384, 324),
+        ),
+    ],
+)
+def test_template_transform(img_weight, template_weight, template_transform, template_size):
+    img = np.random.randint(0, 256, [513, 450], np.uint8)
+    templates = [np.random.randint(0, 256, template_size, np.uint8)]
+
+    aug = A.TemplateTransform(templates, img_weight, template_weight, template_transform)
+    result = aug(image=img)["image"]
+
+    assert result.shape == img.shape
+
+    params = aug.get_params_dependent_on_targets({"image": img})
+    template = params["template"]
+    assert template.shape == img.shape
+    assert template.dtype == img.dtype

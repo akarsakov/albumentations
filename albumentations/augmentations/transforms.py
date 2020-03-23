@@ -80,6 +80,7 @@ __all__ = [
     "FancyPCA",
     "MaskDropout",
     "GridDropout",
+    "TemplateTransform",
 ]
 
 
@@ -3371,3 +3372,81 @@ class GridDropout(DualTransform):
             "mask_fill_value",
             "random_offset",
         )
+
+
+class TemplateTransform(ImageOnlyTransform):
+    """
+    Apply blending of input image with specified templates
+
+    Args:
+        templates (np.array or list of np.array): Images as template for transform.
+        img_weight ((float, float) or float): If single float will be used as weight for input image.
+            If tuple of float img_weight will be in range `[img_weight[0], img_weight[1])`. Default: 0.5.
+        template_weight ((float, float) or float): If single float will be used as weight for template.
+            If tuple of float template_weight will be in range `[template_weight[0], template_weight[1])`.
+            Default: 0.5.
+        template_transform: transformation object which could be applied to template,
+            must produce template the same size as input image.
+        p (float): probability of applying the transform. Default: 0.5.
+
+    Targets:
+        image
+
+    Image types:
+        Any
+    """
+
+    def __init__(
+        self, templates, img_weight=0.5, template_weight=0.5, template_transform=None, always_apply=False, p=0.5
+    ):
+        super().__init__(always_apply, p)
+        self.templates = templates if isinstance(templates, list) else [templates]
+        self.img_weight = to_tuple(img_weight, img_weight)
+        self.template_weight = to_tuple(template_weight, template_weight)
+        self.template_transform = template_transform
+
+    def apply(self, img, template=None, img_weight=0.5, template_weight=0.5, **params):
+        if img.shape != template.shape:
+            raise ValueError(
+                "Expected image and template have the same shape, got {} and {}".format(img.shape, template.shape)
+            )
+
+        return F.add_weighted(img, img_weight, template, template_weight)
+
+    def get_params(self):
+        return {
+            "img_weight": random.uniform(self.img_weight[0], self.img_weight[1]),
+            "template_weight": random.uniform(self.template_weight[0], self.template_weight[1]),
+        }
+
+    def get_transform_init_args_names(self):
+        return ("templates", "img_weight", "template_weight")
+
+    def get_params_dependent_on_targets(self, params):
+        img = params["image"]
+        template = random.choice(self.templates)
+
+        if self.template_transform is not None:
+            template = self.template_transform(image=template)["image"]
+
+        if F.get_num_channels(template) not in [1, F.get_num_channels(img)]:
+            raise ValueError(
+                "Expected template to be single channel or "
+                "has the same number of channels as input image ({}), got {}".format(
+                    F.get_num_channels(img), F.get_num_channels(template)
+                )
+            )
+
+        if template.dtype != img.dtype:
+            raise ValueError("Expected template and image to have the same image type")
+
+        if F.get_num_channels(template) == 1 and F.get_num_channels(img) > 1:
+            template = np.stack((template,) * F.get_num_channels(img), axis=-1)
+
+        template = template.reshape(img.shape)
+
+        return {"template": template}
+
+    @property
+    def targets_as_params(self):
+        return ["image"]

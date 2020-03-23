@@ -62,6 +62,7 @@ from albumentations import (
     Downscale,
     MultiplicativeNoise,
     GridDropout,
+    TemplateTransform,
 )
 
 
@@ -98,6 +99,7 @@ from albumentations import (
         [Downscale, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8)}],
     ],
 )
 def test_image_only_augmentations(augmentation_cls, params, image, mask):
@@ -136,6 +138,7 @@ def test_image_only_augmentations(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.uniform(0.0, 1.0, size=(100, 100)).astype("float32")}],
     ],
 )
 def test_image_only_augmentations_with_float_values(augmentation_cls, params, float_image, mask):
@@ -278,6 +281,7 @@ def test_imgaug_dual_augmentations(augmentation_cls, image, mask):
         [Equalize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(100, 100), dtype=np.uint8)}],
     ],
 )
 def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
@@ -336,6 +340,7 @@ def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.uniform(0.0, 1.0, size=(100, 100)).astype("float32")}],
     ],
 )
 def test_augmentations_wont_change_float_input(augmentation_cls, params, float_image):
@@ -378,6 +383,8 @@ def test_augmentations_wont_change_float_input(augmentation_cls, params, float_i
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
         [HueSaturationValue, {}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(224, 224), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(224, 224, 1), dtype=np.uint8)}],
     ],
 )
 def test_augmentations_wont_change_shape_grayscale(augmentation_cls, params, image, mask):
@@ -452,6 +459,9 @@ def test_augmentations_wont_change_shape_grayscale(augmentation_cls, params, ima
         [Equalize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(224, 224), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(224, 224, 1), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(224, 224, 3), dtype=np.uint8)}],
     ],
 )
 def test_augmentations_wont_change_shape_rgb(augmentation_cls, params, image, mask):
@@ -514,6 +524,9 @@ def test_mask_fill_value(augmentation_cls, params):
         [RandomBrightnessContrast, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(512, 512), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(512, 512, 1), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(0, 256, size=(512, 512, 6), dtype=np.uint8)}],
     ],
 )
 def test_multichannel_image_augmentations(augmentation_cls, params):

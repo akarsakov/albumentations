@@ -2032,3 +2032,8 @@ def glass_blur(img, sigma, max_delta, iterations, dxy, mode):
             x[h, w], x[h + dy, w + dx] = x[h + dy, w + dx], x[h, w]
 
     return np.clip(cv2.GaussianBlur(x / coef, sigmaX=sigma, ksize=(0, 0)), 0, 1) * coef
+
+
+@clipped
+def add_weighted(img1, alpha, img2, beta):
+    return img1.astype(float) * alpha + img2.astype(float) * beta
