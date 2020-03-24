@@ -8,7 +8,7 @@ import imgaug as ia
 
 import albumentations as A
 import albumentations.augmentations.functional as F
-from .utils import OpenMock
+from .utils import OpenMock, ImreadMock
 
 TEST_SEEDS = (0, 1, 42, 111, 9999)
 
@@ -67,12 +67,13 @@ def set_seed(seed):
         [A.Equalize, {}],
         [A.Downscale, {}],
         [A.MultiplicativeNoise, {}],
-        [A.TemplateTransform, {"templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8)}],
+        [A.TemplateTransform, {"templates_fn": "template_100_u8c1.png"}],
     ],
 )
 @pytest.mark.parametrize("p", [0.5, 1])
 @pytest.mark.parametrize("seed", TEST_SEEDS)
 @pytest.mark.parametrize("always_apply", (False, True))
+@patch("cv2.imread", ImreadMock())
 def test_augmentations_serialization(augmentation_cls, params, p, seed, image, mask, always_apply):
     aug = augmentation_cls(p=p, always_apply=always_apply, **params)
     serialized_aug = A.to_dict(aug)
@@ -220,7 +221,7 @@ AUGMENTATION_CLS_PARAMS = (
         [
             A.TemplateTransform,
             {
-                "templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8),
+                "templates_fn": "template_100_u8c1.png",
                 "img_weight": 0.7,
                 "template_weight": 0.5,
                 "template_transform": A.NoOp(always_apply=True),
@@ -234,6 +235,7 @@ AUGMENTATION_CLS_PARAMS = (
 @pytest.mark.parametrize("p", [0.5, 1])
 @pytest.mark.parametrize("seed", TEST_SEEDS)
 @pytest.mark.parametrize("always_apply", (False, True))
+@patch("cv2.imread", ImreadMock())
 def test_augmentations_serialization_with_custom_parameters(
     augmentation_cls, params, p, seed, image, mask, always_apply
 ):
@@ -253,6 +255,7 @@ def test_augmentations_serialization_with_custom_parameters(
 @pytest.mark.parametrize("seed", TEST_SEEDS)
 @pytest.mark.parametrize("always_apply", (False, True))
 @pytest.mark.parametrize("data_format", ("yaml",))
+@patch("cv2.imread", ImreadMock())
 def test_augmentations_serialization_to_file_with_custom_parameters(
     augmentation_cls, params, p, seed, image, mask, always_apply, data_format
 ):
@@ -320,12 +323,13 @@ def test_augmentations_serialization_to_file_with_custom_parameters(
         [A.Posterize, {}],
         [A.Equalize, {}],
         [A.MultiplicativeNoise, {}],
-        [A.TemplateTransform, {"templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8)}],
+        [A.TemplateTransform, {"templates_fn": "template_100_u8c1.png"}],
     ],
 )
 @pytest.mark.parametrize("p", [0.5, 1])
 @pytest.mark.parametrize("seed", TEST_SEEDS)
 @pytest.mark.parametrize("always_apply", (False, True))
+@patch("cv2.imread", ImreadMock())
 def test_augmentations_for_bboxes_serialization(
     augmentation_cls, params, p, seed, image, albumentations_bboxes, always_apply
 ):
@@ -385,12 +389,13 @@ def test_augmentations_for_bboxes_serialization(
         [A.Posterize, {}],
         [A.Equalize, {}],
         [A.MultiplicativeNoise, {}],
-        [A.TemplateTransform, {"templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8)}],
+        [A.TemplateTransform, {"templates_fn": "template_100_u8c1.png"}],
     ],
 )
 @pytest.mark.parametrize("p", [0.5, 1])
 @pytest.mark.parametrize("seed", TEST_SEEDS)
 @pytest.mark.parametrize("always_apply", (False, True))
+@patch("cv2.imread", ImreadMock())
 def test_augmentations_for_keypoints_serialization(augmentation_cls, params, p, seed, image, keypoints, always_apply):
     aug = augmentation_cls(p=p, always_apply=always_apply, **params)
     serialized_aug = A.to_dict(aug)
@@ -667,10 +672,11 @@ def test_transform_pipeline_serialization_with_keypoints(seed, image, keypoints,
         [A.Posterize, {}],
         [A.Equalize, {}],
         [A.MultiplicativeNoise, {}],
-        [A.TemplateTransform, {"templates": np.random.randint(0, 255, size=(100, 100), dtype=np.uint8)}],
+        [A.TemplateTransform, {"templates_fn": "template_100_u8c1.png"}],
     ],
 )
 @pytest.mark.parametrize("seed", TEST_SEEDS)
+@patch("cv2.imread", ImreadMock())
 def test_additional_targets_for_image_only_serialization(augmentation_cls, params, image, seed):
     aug = A.Compose([augmentation_cls(always_apply=True, **params)], additional_targets={"image2": "image"})
     image2 = image.copy()

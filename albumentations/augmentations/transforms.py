@@ -3379,7 +3379,7 @@ class TemplateTransform(ImageOnlyTransform):
     Apply blending of input image with specified templates
 
     Args:
-        templates (np.array or list of np.array): Images as template for transform.
+        templates_fn (filename string or list of filename strings): Path to images as template for transform.
         img_weight ((float, float) or float): If single float will be used as weight for input image.
             If tuple of float img_weight will be in range `[img_weight[0], img_weight[1])`. Default: 0.5.
         template_weight ((float, float) or float): If single float will be used as weight for template.
@@ -3393,17 +3393,25 @@ class TemplateTransform(ImageOnlyTransform):
         image
 
     Image types:
-        Any
+        uint8, float32
     """
 
     def __init__(
-        self, templates, img_weight=0.5, template_weight=0.5, template_transform=None, always_apply=False, p=0.5
+        self, templates_fn, img_weight=0.5, template_weight=0.5, template_transform=None, always_apply=False, p=0.5
     ):
         super().__init__(always_apply, p)
-        self.templates = templates if isinstance(templates, list) else [templates]
+        self.templates_fn = templates_fn if isinstance(templates_fn, list) else [templates_fn]
+        self.templates = [self._read_template(fn) for fn in self.templates_fn]
         self.img_weight = to_tuple(img_weight, img_weight)
         self.template_weight = to_tuple(template_weight, template_weight)
         self.template_transform = template_transform
+
+    def _read_template(self, fn):
+        template = cv2.imread(fn, cv2.IMREAD_ANYCOLOR)
+        if F.get_num_channels(template) > 1:
+            template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
+
+        return template
 
     def apply(self, img, template=None, img_weight=0.5, template_weight=0.5, **params):
         return F.add_weighted(img, img_weight, template, template_weight)
@@ -3415,11 +3423,14 @@ class TemplateTransform(ImageOnlyTransform):
         }
 
     def get_transform_init_args_names(self):
-        return ("templates", "img_weight", "template_weight")
+        return ("templates_fn", "img_weight", "template_weight")
 
     def get_params_dependent_on_targets(self, params):
         img = params["image"]
         template = random.choice(self.templates)
+
+        if img.dtype == np.float32:
+            template = F.to_float(template, 255)
 
         if self.template_transform is not None:
             template = self.template_transform(image=template)["image"]

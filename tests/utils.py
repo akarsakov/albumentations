@@ -1,5 +1,6 @@
 from io import StringIO
 
+import cv2
 import numpy as np
 
 
@@ -50,3 +51,30 @@ class OpenMock:
 
     def save_value(self, value, file):
         self.values[file] = value
+
+
+class ImreadMock:
+    """
+    Mocks the `cv2.imread`. A call to the instance of OpenMock returns an in-memory file which is
+    readable and writable. The actual in-memory file implementation should call the passed `save_value` method
+    to save the file content in the cache when the file is being closed to preserve the file content.
+    """
+
+    IMG_100_8UC1 = "template_100_u8c1.png"
+    IMG_224_8UC1 = "template_224_u8c1.png"
+    IMG_512_8UC1 = "template_512_u8c1.png"
+    IMG_512_8UC3 = "template_512_u8c3.png"
+
+    def __init__(self):
+        self.images = {
+            self.IMG_100_8UC1: np.random.randint(0, 256, size=(100, 100), dtype=np.uint8),
+            self.IMG_224_8UC1: np.random.randint(0, 256, size=(224, 224), dtype=np.uint8),
+            self.IMG_512_8UC1: np.random.randint(0, 256, size=(512, 512), dtype=np.uint8),
+            self.IMG_512_8UC3: np.random.randint(0, 256, size=(512, 512, 3), dtype=np.uint8),
+        }
+
+    def __call__(self, file, *args, **kwargs):
+        if file in self.images:
+            return self.images[file]
+        else:
+            return cv2.imread(file)

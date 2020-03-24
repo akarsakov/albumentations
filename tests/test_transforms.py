@@ -3,6 +3,9 @@ from functools import partial
 import cv2
 import numpy as np
 import pytest
+from unittest.mock import patch
+
+from .utils import ImreadMock
 
 import albumentations as A
 import albumentations.augmentations.functional as F
@@ -655,27 +658,30 @@ def test_gauss_noise_incorrect_var_limit_type():
 
 
 @pytest.mark.parametrize(
-    ["img_weight", "template_weight", "template_transform", "template_size"],
+    ["img_weight", "template_weight", "template_transform", "image_size", "template"],
     [
-        (0.5, 0.5, A.RandomSizedCrop((50, 200), 513, 450, always_apply=True), (256, 750)),
-        (0.5, 0.5, A.RandomResizedCrop(513, 450, always_apply=True), (384, 234)),
-        (0.5, 0.5, A.CenterCrop(513, 450, always_apply=True), (1023, 543)),
-        (0.5, 0.5, A.Resize(513, 450, always_apply=True), (1023, 543)),
-        (0.5, 0.5, A.NoOp(), (513, 450)),
-        (0.5, 0.5, None, (513, 450)),
+        (0.5, 0.5, A.RandomSizedCrop((50, 200), 513, 450, always_apply=True), (513, 450), ImreadMock.IMG_224_8UC1),
+        (0.3, 0.5, A.RandomResizedCrop(513, 450, always_apply=True), (513, 450), ImreadMock.IMG_224_8UC1),
+        (1.0, 0.5, A.CenterCrop(500, 450, always_apply=True), (500, 450, 3), ImreadMock.IMG_512_8UC3),
+        (0.5, 0.8, A.Resize(513, 450, always_apply=True), (513, 450), ImreadMock.IMG_512_8UC1),
+        (0.5, 0.2, A.NoOp(), (224, 224), ImreadMock.IMG_224_8UC1),
+        (0.5, 0.9, A.NoOp(), (512, 512, 3), ImreadMock.IMG_512_8UC3),
+        (0.5, 0.5, None, (512, 512), ImreadMock.IMG_512_8UC1),
+        (0.8, 0.7, None, (512, 512, 3), ImreadMock.IMG_512_8UC3),
         (
             0.5,
             0.5,
-            A.Compose([A.Blur(), A.RandomSizedCrop((50, 200), 513, 450, always_apply=True), A.HorizontalFlip()]),
-            (384, 324),
+            A.Compose([A.Blur(), A.RandomSizedCrop((50, 200), 512, 512, always_apply=True), A.HorizontalFlip()]),
+            (512, 512),
+            ImreadMock.IMG_512_8UC1,
         ),
     ],
 )
-def test_template_transform(img_weight, template_weight, template_transform, template_size):
-    img = np.random.randint(0, 256, [513, 450], np.uint8)
-    templates = [np.random.randint(0, 256, template_size, np.uint8)]
+@patch("cv2.imread", ImreadMock())
+def test_template_transform(image, img_weight, template_weight, template_transform, image_size, template):
+    img = np.random.randint(0, 256, image_size, np.uint8)
 
-    aug = A.TemplateTransform(templates, img_weight, template_weight, template_transform)
+    aug = A.TemplateTransform(template, img_weight, template_weight, template_transform)
     result = aug(image=img)["image"]
 
     assert result.shape == img.shape
@@ -686,41 +692,29 @@ def test_template_transform(img_weight, template_weight, template_transform, tem
     assert template.dtype == img.dtype
 
 
-def test_template_transform_incorrect_size():
-    img = np.random.randint(0, 256, [513, 450], np.uint8)
-    template = np.random.randint(0, 1, [455, 545], np.uint8)
-
+@patch("cv2.imread", ImreadMock())
+def test_template_transform_incorrect_size(image):
     with pytest.raises(ValueError) as exc_info:
-        transform = A.TemplateTransform(template, always_apply=True)
-        transform(image=img)
+        transform = A.TemplateTransform(ImreadMock.IMG_224_8UC1, always_apply=True)
+        transform(image=image)
 
-    message = "Image and template must be the same size, got {} and {}".format(img.shape[:2], template.shape[:2])
+    template = cv2.imread(ImreadMock.IMG_224_8UC1)
+    message = "Image and template must be the same size, got {} and {}".format(image.shape[:2], template.shape[:2])
     assert str(exc_info.value) == message
 
 
-def test_template_transform_incorrect_type():
-    img = np.random.randint(0, 256, [513, 450], np.uint8)
-    template = np.random.uniform(0, 1, [513, 450]).astype(np.float32)
+@pytest.mark.parametrize(["img_channels", "template"], [(1, ImreadMock.IMG_512_8UC3), (6, ImreadMock.IMG_512_8UC3)])
+@patch("cv2.imread", ImreadMock())
+def test_template_transform_incorrect_channels(img_channels, template):
+    img = np.random.randint(0, 256, [512, 512, img_channels], np.uint8)
 
     with pytest.raises(ValueError) as exc_info:
         transform = A.TemplateTransform(template, always_apply=True)
         transform(image=img)
 
-    message = "Image and template must be the same image type"
-    assert str(exc_info.value) == message
-
-
-@pytest.mark.parametrize(["img_channels", "template_channels"], [(6, 3), (1, 3), (3, 2)])
-def test_template_transform_incorrect_channels(img_channels, template_channels):
-    img = np.random.randint(0, 256, [513, 450, img_channels], np.uint8)
-    template = np.random.randint(0, 1, [513, 450, template_channels], np.uint8)
-
-    with pytest.raises(ValueError) as exc_info:
-        transform = A.TemplateTransform(template, always_apply=True)
-        transform(image=img)
-
+    template_img = cv2.imread(template)
     message = (
         "Template must be a single channel or has the same number of channels "
-        "as input image ({}), got {}".format(img_channels, template_channels)
+        "as input image ({}), got {}".format(img_channels, template_img.shape[-1])
     )
     assert str(exc_info.value) == message
