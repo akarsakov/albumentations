@@ -55,9 +55,8 @@ class OpenMock:
 
 class ImreadMock:
     """
-    Mocks the `cv2.imread`. A call to the instance of OpenMock returns an in-memory file which is
-    readable and writable. The actual in-memory file implementation should call the passed `save_value` method
-    to save the file content in the cache when the file is being closed to preserve the file content.
+    Mocks the `cv2.imread`. A call to the instance of ImreadMock returns a predefined image
+    or reads actual image from file
     """
 
     IMG_100_8UC1 = "template_100_u8c1.png"
@@ -76,5 +75,5 @@ class ImreadMock:
     def __call__(self, file, *args, **kwargs):
         if file in self.images:
             return self.images[file]
-        else:
-            return cv2.imread(file)
+
+        return cv2.imread(file, *args, **kwargs)

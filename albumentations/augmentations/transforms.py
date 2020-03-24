@@ -3400,18 +3400,19 @@ class TemplateTransform(ImageOnlyTransform):
         self, templates_fn, img_weight=0.5, template_weight=0.5, template_transform=None, always_apply=False, p=0.5
     ):
         super().__init__(always_apply, p)
+
+        def read_template(fn):
+            template = cv2.imread(fn, cv2.IMREAD_ANYCOLOR)
+            if F.get_num_channels(template) > 1:
+                template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
+
+            return template
+
         self.templates_fn = templates_fn if isinstance(templates_fn, list) else [templates_fn]
-        self.templates = [self._read_template(fn) for fn in self.templates_fn]
+        self.templates = [read_template(fn) for fn in self.templates_fn]
         self.img_weight = to_tuple(img_weight, img_weight)
         self.template_weight = to_tuple(template_weight, template_weight)
         self.template_transform = template_transform
-
-    def _read_template(self, fn):
-        template = cv2.imread(fn, cv2.IMREAD_ANYCOLOR)
-        if F.get_num_channels(template) > 1:
-            template = cv2.cvtColor(template, cv2.COLOR_BGR2RGB)
-
-        return template
 
     def apply(self, img, template=None, img_weight=0.5, template_weight=0.5, **params):
         return F.add_weighted(img, img_weight, template, template_weight)
