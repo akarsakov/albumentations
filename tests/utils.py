@@ -51,29 +51,3 @@ class OpenMock:
 
     def save_value(self, value, file):
         self.values[file] = value
-
-
-class ImreadMock:
-    """
-    Mocks the `cv2.imread`. A call to the instance of ImreadMock returns a predefined image
-    or reads actual image from file
-    """
-
-    IMG_100_8UC1 = "template_100_u8c1.png"
-    IMG_224_8UC1 = "template_224_u8c1.png"
-    IMG_512_8UC1 = "template_512_u8c1.png"
-    IMG_512_8UC3 = "template_512_u8c3.png"
-
-    def __init__(self):
-        self.images = {
-            self.IMG_100_8UC1: np.random.randint(0, 256, size=(100, 100), dtype=np.uint8),
-            self.IMG_224_8UC1: np.random.randint(0, 256, size=(224, 224), dtype=np.uint8),
-            self.IMG_512_8UC1: np.random.randint(0, 256, size=(512, 512), dtype=np.uint8),
-            self.IMG_512_8UC3: np.random.randint(0, 256, size=(512, 512, 3), dtype=np.uint8),
-        }
-
-    def __call__(self, file, *args, **kwargs):
-        if file in self.images:
-            return self.images[file]
-
-        return cv2.imread(file, *args, **kwargs)

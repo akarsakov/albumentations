@@ -11,7 +11,7 @@ from albumentations.core.six import add_metaclass
 from albumentations.core.transforms_interface import DualTransform
 from albumentations.core.utils import format_args, Params
 from albumentations.augmentations.bbox_utils import BboxProcessor
-from albumentations.core.serialization import SERIALIZABLE_REGISTRY, instantiate_lambda
+from albumentations.core.serialization import SERIALIZABLE_REGISTRY, instantiate_nonserializable
 
 __all__ = ["Compose", "OneOf", "OneOrOther", "BboxParams", "KeypointParams", "ReplayCompose"]
 
@@ -91,6 +91,10 @@ class BaseCompose:
     @classmethod
     def get_class_fullname(cls):
         return "{cls.__module__}.{cls.__name__}".format(cls=cls)
+
+    @classmethod
+    def is_serializable(cls):
+        return True
 
     def _to_dict(self):
         return {
@@ -313,7 +317,7 @@ class ReplayCompose(Compose):
         transform = transform_dict
         applied = transform["applied"]
         params = transform["params"]
-        lmbd = instantiate_lambda(transform, lambda_transforms)
+        lmbd = instantiate_nonserializable(transform, lambda_transforms)
         if lmbd:
             transform = lmbd
         else:

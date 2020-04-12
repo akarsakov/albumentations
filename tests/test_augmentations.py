@@ -3,9 +3,8 @@ import random
 import cv2
 import numpy as np
 import pytest
-from unittest.mock import patch
 
-from .utils import ImreadMock
+from .conftest import template, float_template
 
 from albumentations import (
     RandomCrop,
@@ -102,10 +101,9 @@ from albumentations import (
         [Downscale, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_100_8UC1}],
+        [TemplateTransform, {"templates": template()}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_image_only_augmentations(augmentation_cls, params, image, mask):
     aug = augmentation_cls(p=1, **params)
     data = aug(image=image, mask=mask)
@@ -142,10 +140,9 @@ def test_image_only_augmentations(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_100_8UC1}],
+        [TemplateTransform, {"templates": float_template()}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_image_only_augmentations_with_float_values(augmentation_cls, params, float_image, mask):
     aug = augmentation_cls(p=1, **params)
     data = aug(image=float_image, mask=mask)
@@ -286,10 +283,9 @@ def test_imgaug_dual_augmentations(augmentation_cls, image, mask):
         [Equalize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_100_8UC1}],
+        [TemplateTransform, {"templates": template()}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
     image_copy = image.copy()
     mask_copy = mask.copy()
@@ -346,10 +342,9 @@ def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_100_8UC1}],
+        [TemplateTransform, {"templates": float_template()}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_augmentations_wont_change_float_input(augmentation_cls, params, float_image):
     float_image_copy = float_image.copy()
     aug = augmentation_cls(p=1, **params)
@@ -390,10 +385,9 @@ def test_augmentations_wont_change_float_input(augmentation_cls, params, float_i
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
         [HueSaturationValue, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_224_8UC1}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(224, 224), dtype=np.uint8)}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_augmentations_wont_change_shape_grayscale(augmentation_cls, params, image, mask):
     aug = augmentation_cls(p=1, **params)
 
@@ -466,10 +460,9 @@ def test_augmentations_wont_change_shape_grayscale(augmentation_cls, params, ima
         [Equalize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_224_8UC1}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(224, 224), dtype=np.uint8)}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_augmentations_wont_change_shape_rgb(augmentation_cls, params, image, mask):
     aug = augmentation_cls(p=1, **params)
 
@@ -530,10 +523,11 @@ def test_mask_fill_value(augmentation_cls, params):
         [RandomBrightnessContrast, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates_fn": ImreadMock.IMG_512_8UC1}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(512, 512), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(512, 512, 1), dtype=np.uint8)}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(512, 512, 6), dtype=np.uint8)}],
     ],
 )
-@patch("cv2.imread", ImreadMock())
 def test_multichannel_image_augmentations(augmentation_cls, params):
     image = np.zeros((512, 512, 6), dtype=np.uint8)
     aug = augmentation_cls(p=1, **params)
