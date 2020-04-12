@@ -4,8 +4,6 @@ import cv2
 import numpy as np
 import pytest
 
-from .conftest import template, float_template
-
 from albumentations import (
     RandomCrop,
     PadIfNeeded,
@@ -101,7 +99,7 @@ from albumentations import (
         [Downscale, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates": template()}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(100, 100, 3), dtype=np.uint8)}],
     ],
 )
 def test_image_only_augmentations(augmentation_cls, params, image, mask):
@@ -140,7 +138,7 @@ def test_image_only_augmentations(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates": float_template()}],
+        [TemplateTransform, {"templates": np.random.uniform(low=0.0, high=1.0, size=(100, 100, 3)).astype("float32")}],
     ],
 )
 def test_image_only_augmentations_with_float_values(augmentation_cls, params, float_image, mask):
@@ -283,7 +281,7 @@ def test_imgaug_dual_augmentations(augmentation_cls, image, mask):
         [Equalize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates": template()}],
+        [TemplateTransform, {"templates": np.random.randint(low=0, high=256, size=(100, 100, 3), dtype=np.uint8)}],
     ],
 )
 def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
@@ -342,7 +340,7 @@ def test_augmentations_wont_change_input(augmentation_cls, params, image, mask):
         [Solarize, {}],
         [MultiplicativeNoise, {}],
         [GridDropout, {}],
-        [TemplateTransform, {"templates": float_template()}],
+        [TemplateTransform, {"templates": np.random.uniform(low=0.0, high=1.0, size=(100, 100, 3)).astype("float32")}],
     ],
 )
 def test_augmentations_wont_change_float_input(augmentation_cls, params, float_image):

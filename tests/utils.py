@@ -1,6 +1,5 @@
 from io import StringIO
 
-import cv2
 import numpy as np
 
 

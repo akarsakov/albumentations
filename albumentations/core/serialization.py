@@ -26,8 +26,9 @@ class SerializableMeta(type):
     A metaclass that is used to register classes in `SERIALIZABLE_REGISTRY` or `NON_SERIALIZABLE_REGISTRY`
     so they can be found later while deserializing transformation pipeline using classes full names.
     """
-    def __new__(meta, name, bases, class_dict):
-        cls_obj = type.__new__(meta, name, bases, class_dict)
+
+    def __new__(cls, name, bases, class_dict):
+        cls_obj = type.__new__(cls, name, bases, class_dict)
         if cls_obj.is_serializable():
             SERIALIZABLE_REGISTRY[cls_obj.get_class_fullname()] = cls_obj
         else:
